@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id        Int              @id @default(autoincrement())
+  title     String
+  status    String           @default("draft") // draft|in_signing|completed|rejected
+  mode      String           @default("sequential") // sequential|parallel
+  createdAt String           @default("")
+  updatedAt String           @default("")
+  signers   Signer[]
+  fields    SignatureField[]
+  versions  DocVersion[]
+  audits    AuditLog[]
+}
+
+model Signer {
+  id         Int              @id @default(autoincrement())
+  documentId Int
+  document   Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  name       String
+  email      String
+  order      Int              @default(0)
+  token      String           @unique
+  status     String           @default("pending") // pending|signed|rejected
+  signedAt   String?
+  fields     SignatureField[]
+}
+
+model SignatureField {
+  id         Int      @id @default(autoincrement())
+  documentId Int
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  signerId   Int
+  signer     Signer   @relation(fields: [signerId], references: [id], onDelete: Cascade)
+  page       Int      @default(1)
+  x          Float
+  y          Float
+  width      Float    @default(150)
+  height     Float    @default(50)
+}
+
+model DocVersion {
+  id         Int      @id @default(autoincrement())
+  documentId Int
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version    Int
+  filePath   String
+  sha256     String
+  note       String   @default("")
+  createdAt  String   @default("")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  documentId Int
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  actor      String
+  action     String // created|viewed|signed|rejected|downloaded|verified
+  ip         String   @default("")
+  userAgent  String   @default("")
+  createdAt  String   @default("")
+}
